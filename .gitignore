@@ -1,0 +1,19 @@
+# Local Environment Secrets
+.env
+.env.local
+.env.development.local
+
+# Dependencies
+node_modules/
+vendor/
+
+# Docker/System
+.DS_Store
+db_data/
+
+# Laravel Specific
+storage/*.key
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*

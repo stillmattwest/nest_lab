@@ -1,0 +1,65 @@
+services:
+  # The shared database container
+  postgres:
+    image: postgres:16.3-alpine
+    container_name: lab_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: lab_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: lab_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  # The Nervous System
+  nats:
+    image: nats:latest
+    container_name: lab_nats
+    restart: always
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  # Phase 1: The Monolith
+  laravel_monolith:
+    build:
+      context: ./laravel_monolith
+      dockerfile: Dockerfile
+    container_name: lab_laravel
+    restart: unless-stopped
+    working_dir: /var/www
+    ports:
+      - "8000:80"
+    volumes:
+      - ./laravel_monolith:/var/www
+    depends_on:
+      - postgres
+      - nats
+
+  # Phase 2: The Entry Point
+  frontend:
+    build: ./frontend
+    container_name: lab_nextjs
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+
+  # Phase 3: The Strangler Pattern
+  nest_app:
+    build: ./nest_app
+    container_name: lab_nest_app
+    volumes:
+      - ./nest_app:/app
+    ports:
+      - "3001:3000"
+    depends_on:
+      - laravel_monolith
+      - nats
+
+volumes:
+  db_data:
