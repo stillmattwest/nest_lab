@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,24 +18,38 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $user = User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $userData = SeedContent::users();
+        $users = [];
 
-        $posts = Post::factory(3)->for($user)->create();
-
-        foreach ($posts as $post) {
-            Comment::factory(2)->for($user)->for($post)->create();
+        foreach ($userData as $attrs) {
+            $users[] = User::factory()->create([
+                'name' => $attrs['name'],
+                'email' => $attrs['email'],
+                'password' => Hash::make('password'),
+            ]);
         }
 
-        // One more user with a comment on the first post (to test post-owner delete)
-        $otherUser = User::factory()->create([
-            'name' => 'Other User',
-            'email' => 'other@example.com',
-        ]);
-        Comment::factory()->for($otherUser)->for($posts[0])->create([
-            'body' => 'A comment from another user on the first post.',
-        ]);
+        $postData = SeedContent::posts();
+        $posts = [];
+
+        foreach ($postData as $index => $attrs) {
+            $author = $users[$index % count($users)];
+            $posts[] = Post::factory()->for($author)->create([
+                'title' => $attrs['title'],
+                'body' => $attrs['body'],
+            ]);
+        }
+
+        $commentBodies = SeedContent::commentBodies();
+
+        for ($i = 0; $i < 50; $i++) {
+            $post = $posts[$i % count($posts)];
+            $commenter = $users[$i % count($users)];
+            $body = $commentBodies[$i % count($commentBodies)];
+
+            Comment::factory()->for($commenter)->for($post)->create([
+                'body' => $body,
+            ]);
+        }
     }
 }

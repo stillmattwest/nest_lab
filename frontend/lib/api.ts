@@ -57,6 +57,26 @@ async function apiFetch<T>(
   return { data: json as T, status };
 }
 
+/** Laravel wraps single resources in { data: T }. Unwrap so callers get T. */
+function unwrapSingleResource<T>(result: {
+  data?: T | { data: T };
+  error?: ApiValidationError;
+  status: number;
+}): { data?: T; error?: ApiValidationError; status: number } {
+  const raw = result.data;
+  if (
+    raw &&
+    typeof raw === 'object' &&
+    'data' in raw &&
+    typeof (raw as { data: T }).data === 'object' &&
+    (raw as { data: T }).data !== null &&
+    !Array.isArray((raw as { data: T }).data)
+  ) {
+    return { ...result, data: (raw as { data: T }).data };
+  }
+  return result as { data?: T; error?: ApiValidationError; status: number };
+}
+
 // Posts
 export async function getPosts(params?: { page?: number; user_id?: number }) {
   const search = new URLSearchParams();
@@ -68,24 +88,28 @@ export async function getPosts(params?: { page?: number; user_id?: number }) {
 }
 
 export async function getPost(id: number | string) {
-  return apiFetch<Post>(`/posts/${id}`);
+  return unwrapSingleResource(await apiFetch<Post | { data: Post }>(`/posts/${id}`));
 }
 
 export async function createPost(body: { title: string; body: string }) {
-  return apiFetch<Post>('/posts', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
+  return unwrapSingleResource(
+    await apiFetch<Post | { data: Post }>('/posts', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  );
 }
 
 export async function updatePost(
   id: number | string,
   body: { title?: string; body?: string }
 ) {
-  return apiFetch<Post>(`/posts/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  });
+  return unwrapSingleResource(
+    await apiFetch<Post | { data: Post }>(`/posts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    })
+  );
 }
 
 export async function deletePost(id: number | string) {
@@ -98,24 +122,30 @@ export async function getComments(postId: number | string) {
 }
 
 export async function getComment(id: number | string) {
-  return apiFetch<Comment>(`/comments/${id}`);
+  return unwrapSingleResource(
+    await apiFetch<Comment | { data: Comment }>(`/comments/${id}`)
+  );
 }
 
 export async function createComment(postId: number | string, body: { body: string }) {
-  return apiFetch<Comment>(`/posts/${postId}/comments`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
+  return unwrapSingleResource(
+    await apiFetch<Comment | { data: Comment }>(`/posts/${postId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  );
 }
 
 export async function updateComment(
   id: number | string,
   body: { body?: string }
 ) {
-  return apiFetch<Comment>(`/comments/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  });
+  return unwrapSingleResource(
+    await apiFetch<Comment | { data: Comment }>(`/comments/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    })
+  );
 }
 
 export async function deleteComment(id: number | string) {
