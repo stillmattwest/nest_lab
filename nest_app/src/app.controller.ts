@@ -11,10 +11,19 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  // This catches the 'monolith.status_checked' broadcast from Laravel
+  // Catches the 'monolith.status_checked' broadcast from Laravel (e.g. GET /api/status)
   @EventPattern('monolith.status_checked')
   handleMonolithStatus(@Payload() data: any) {
     console.log('--- STRANGLER OVERHEARD MONOLITH ---');
+    console.log('Subject: monolith.status_checked');
+    console.log('Payload:', data);
+  }
+
+  // Catches every API request from Laravel (middleware publishes after each request)
+  @EventPattern('monolith.request')
+  handleMonolithRequest(@Payload() data: any) {
+    console.log('--- STRANGLER OVERHEARD MONOLITH ---');
+    console.log('Subject: monolith.request');
     console.log('Payload:', data);
   }
 }

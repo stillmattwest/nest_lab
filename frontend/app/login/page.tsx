@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Box from '@mui/material/Box';
@@ -21,6 +21,12 @@ function LoginForm() {
 
   const from = searchParams.get('from') ?? '/blog';
 
+  useEffect(() => {
+    if (user) {
+      router.replace(from);
+    }
+  }, [user, router, from]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -35,7 +41,6 @@ function LoginForm() {
   };
 
   if (user) {
-    router.replace(from);
     return (
       <Typography color="text.secondary">Redirecting…</Typography>
     );
