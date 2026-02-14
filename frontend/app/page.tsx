@@ -9,9 +9,7 @@ export default function Home() {
   return (
     <Box
       className="min-h-[70vh] flex flex-col items-center justify-center text-center"
-      sx={{
-        background: 'linear-gradient(180deg, var(--background) 0%, rgba(25, 118, 210, 0.06) 100%)',
-      }}
+      sx={{ backgroundColor: 'background.default' }}
     >
       <Typography
         component="h1"
