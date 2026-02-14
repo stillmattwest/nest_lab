@@ -2,22 +2,29 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use App\Services\NatsService;
 
-Route::get('/status', function () {
+Route::get('/status', function (NatsService $nats) {
     try {
-        // This confirms the "pipes" to Postgres are working
+        // 1. Check Database
         DB::connection()->getPdo();
         
-        return response()->json([
+        $data = [
             'status' => 'success',
             'database' => 'connected',
             'engine' => 'PHP ' . PHP_VERSION,
-            'timestamp' => now()->toDateTimeString(),
-        ]);
+            'timestamp' => now()->toIso8601String(),
+        ];
+
+        // 2. Broadcast to the Nervous System
+        $nats->publish('monolith.status_checked', $data);
+
+        return response()->json($data);
+
     } catch (\Exception $e) {
         return response()->json([
             'status' => 'error',
-            'message' => 'Database connection failed: ' . $e->getMessage(),
+            'message' => 'Monolith failure: ' . $e->getMessage(),
         ], 500);
     }
 });

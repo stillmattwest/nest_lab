@@ -33,6 +33,15 @@ services:
     ports:
       - "4222:4222"
       - "8222:8222"
+  
+  nats_tools:
+    image: natsio/nats-box
+    container_name: lab_nats_tools
+    entrypoint: sleep infinity # Keeps it alive so you can "dce" into it
+    networks:
+      - default # This ensures it's on the same wire as lab_nats
+    depends_on:
+      - nats
 
   # Phase 1: The Monolith
   laravel_monolith:
