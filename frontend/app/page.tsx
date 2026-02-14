@@ -1,31 +1,43 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import Link from 'next/link';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 
 export default function Home() {
-  const [status, setStatus] = useState('Connecting...');
-
-  useEffect(() => {
-    fetch('/api/status')
-      .then(res => res.json())
-      .then(data => setStatus(`Connected! Monolith says: ${data.database}`))
-      .catch(() => setStatus('Failed to connect to Monolith.'));
-  }, []);
-
   return (
-    <main className="min-h-screen bg-background text-foreground font-sans p-8 md:p-12">
-      <div className="max-w-2xl mx-auto space-y-8">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-          Nest Lab: Phase 2
-        </h1>
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 p-5 shadow-sm">
-          <p className="text-sm font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-2">
-            Status
-          </p>
-          <p className="text-foreground text-lg">
-            {status}
-          </p>
-        </div>
-      </div>
-    </main>
+    <Box
+      className="min-h-[70vh] flex flex-col items-center justify-center text-center"
+      sx={{
+        background: 'linear-gradient(180deg, var(--background) 0%, rgba(25, 118, 210, 0.06) 100%)',
+      }}
+    >
+      <Typography
+        component="h1"
+        variant="h3"
+        fontWeight={700}
+        gutterBottom
+        className="max-w-2xl"
+      >
+        Welcome to the blog
+      </Typography>
+      <Typography
+        variant="h6"
+        color="text.secondary"
+        className="max-w-xl mb-6"
+      >
+        Stories, ideas, and updates. Read the latest posts or sign in to write your own.
+      </Typography>
+      <Button
+        component={Link}
+        href="/blog"
+        variant="contained"
+        size="large"
+        sx={{ px: 4, py: 1.5, textTransform: 'none', fontSize: '1.1rem' }}
+      >
+        Read the blog
+      </Button>
+    </Box>
   );
 }
