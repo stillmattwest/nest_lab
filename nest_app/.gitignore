@@ -54,3 +54,15 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Docker & Virtualization
+.docker
+.orbstack
+core
+core.[0-9]*
+*.bin
+*.out
+
+# Node.js crash reports
+*.crash
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
