@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { Providers } from "./providers";
 import { Layout } from "@/components/Layout";
 
@@ -22,9 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} antialiased font-sans`}>
-        <Providers>
-          <Layout>{children}</Layout>
-        </Providers>
+        <AppRouterCacheProvider>
+          <Providers>
+            <Layout>{children}</Layout>
+          </Providers>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );

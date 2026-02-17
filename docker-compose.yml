@@ -4,6 +4,8 @@ services:
     image: postgres:16.3-alpine
     container_name: lab_postgres
     restart: always
+    # Optimization for dev: reduce shared buffers and connections to save RAM
+    command: postgres -c shared_buffers=128MB -c max_connections=20
     environment:
       POSTGRES_DB: lab_db
       POSTGRES_USER: admin
@@ -12,18 +14,26 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-  
-  # the dispacher
+    deploy:
+      resources:
+        limits:
+          memory: 512M # Prevents PG from ballooning during heavy queries
+
+  # the dispatcher
   nginx:
     image: nginx:alpine
     container_name: lab_nginx
     ports:
-      - "8000:80" # This is where you test on your Mac
+      - "8000:80" 
     volumes:
       - ./laravel_monolith:/var/www
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro # Fixed path
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - laravel_monolith
+    deploy:
+      resources:
+        limits:
+          memory: 128M
 
   # The Nervous System
   nats:
@@ -33,15 +43,21 @@ services:
     ports:
       - "4222:4222"
       - "8222:8222"
+    deploy:
+      resources:
+        limits:
+          memory: 128M # NATS is very lightweight
   
   nats_tools:
     image: natsio/nats-box
     container_name: lab_nats_tools
-    entrypoint: sleep infinity # Keeps it alive so you can "dce" into it
-    networks:
-      - default # This ensures it's on the same wire as lab_nats
+    entrypoint: sleep infinity
     depends_on:
       - nats
+    deploy:
+      resources:
+        limits:
+          memory: 64M
 
   # Phase 1: The Monolith
   laravel_monolith:
@@ -51,30 +67,39 @@ services:
     container_name: lab_laravel
     restart: unless-stopped
     working_dir: /var/www
-    # REMOVED ports: - "80:80" to avoid protocol confusion
     volumes:
       - ./laravel_monolith:/var/www
     depends_on:
       - postgres
       - nats
+    deploy:
+      resources:
+        limits:
+          memory: 1G # PHP-FPM can be hungry, but 1G is a safe ceiling
 
   # Phase 2: The Entry Point
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile # Changed from Dockerfile.next
+      dockerfile: Dockerfile
     container_name: lab_nextjs
     volumes:
       - ./frontend:/app
-      - /app/node_modules # Added the colon prefix to keep these in Docker
-      - /app/.next        # Added the colon prefix for the build cache
+      - /app/node_modules
+      - /app/.next
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
+      - API_ORIGIN=http://nginx:80
     depends_on:
+      - nginx
       - laravel_monolith
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G # Next.js dev mode is the biggest RAM hog in your stack
 
   # Phase 3: The Strangler Pattern
   nest_app:
@@ -83,10 +108,14 @@ services:
     volumes:
       - ./nest_app:/app
     ports:
-      - "3001:3000"
+      - "8081:8080"
     depends_on:
       - laravel_monolith
       - nats
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
 volumes:
   db_data:
