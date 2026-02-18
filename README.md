@@ -58,6 +58,28 @@ flowchart LR
 
 No need to install PHP, Node, or Postgres on the host; they run inside containers.
 
+### Linux setup script
+
+On **Linux**, Docker bind mounts can cause permission issues: containers run as root and create files owned by root, which your host user cannot edit. The `linux-setup.sh` script applies compatibility changes so containers run as your host user (UID/GID) and volume permissions work correctly.
+
+**What it does:**
+
+- Adds `user: "${UID:-1000}:${GID:-1000}"` to `laravel_monolith`, `frontend`, and `nest_app` in `docker-compose.yml`
+- Sets `HOME=/tmp` for the Laravel container so npm can write its cache
+- Adds Node.js to the Laravel Dockerfile (for Vite and `npm install`)
+- Adds a frontend entrypoint that fixes ownership of `.next` and `node_modules` before starting
+- Creates `laravel_monolith/.env` from `.env.example` with PostgreSQL config for Docker
+
+**When to run it:** After cloning, before `docker compose up`, if you are on Linux.
+
+**How to run it:**
+
+```bash
+./linux-setup.sh
+```
+
+The script is idempotent (safe to run multiple times). It overwrites `docker-compose.yml`, the Laravel and frontend Dockerfiles, and `laravel_monolith/.env`. If you have reverted these files with `git checkout`, run the script to restore the Linux setup.
+
 ### Steps
 
 1. **Clone the repository** (if you have not already):
@@ -67,15 +89,22 @@ No need to install PHP, Node, or Postgres on the host; they run inside container
    cd nest_lab
    ```
 
-2. **Start the stack** (see [Running the project](#running-the-project)):
+2. **On Linux only**: Run the setup script for volume permissions:
+
+   ```bash
+   ./linux-setup.sh
+   ```
+
+3. **Start the stack** (see [Running the project](#running-the-project)):
 
    ```bash
    docker compose up --build
    ```
 
-3. **Apply migrations and seed the database** (first time or after pulling changes that touch the DB):
+4. **Apply migrations and seed the database** (first time or after pulling changes that touch the DB):
 
    ```bash
+   docker compose exec laravel_monolith php artisan key:generate
    docker compose exec laravel_monolith php artisan migrate --force
    docker compose exec laravel_monolith php artisan db:seed
    ```
@@ -91,6 +120,7 @@ After that, open the blog at http://localhost:3000.
 | `nest_app/` | NestJS app (NATS subscribers, HTTP, NATS logging) |
 | `nginx.conf` | Nginx config (proxy to Laravel) |
 | `docker-compose.yml` | Services: postgres, nginx, nats, nats_tools, laravel_monolith, frontend, nest_app |
+| `linux-setup.sh` | Linux-only script: applies volume-permission and env changes for Docker on Linux |
 
 ## Running the project
 
@@ -105,7 +135,7 @@ If this is your first time, follow [Setup](#setup) first.
 2. **Access**:
    - **Blog UI**: http://localhost:3000 (Next.js)
    - **API via Nginx**: http://localhost:8000 (e.g. http://localhost:8000/api/status)
-   - **Nest app**: http://localhost:3001
+   - **Nest app**: http://localhost:3001 (or http://localhost:5000 if you ran `linux-setup.sh`)
    - **NATS**: localhost:4222 (client); 8222 (monitoring)
 
 3. **Optional**: Seed the Laravel DB (inside the Laravel container):
